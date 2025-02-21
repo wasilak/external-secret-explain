@@ -1,1 +1,1 @@
-# -external-secret-explain
+# external-secret-explain
