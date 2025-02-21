@@ -1,0 +1,40 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "labels": [
+    "renovate::dependencies",
+    "{{#if category}}renovate::{{category}}{{/if}}",
+    "{{#if updateType}}renovate::{{updateType}}{{/if}}",
+    "{{#if datasource}}renovate::{{datasource}}{{/if}}",
+    "{{#if manager}}renovate::{{manager}}{{/if}}",
+    "{{#if vulnerabilitySeverity}}renovate::{{vulnerabilitySeverity}}{{/if}}",
+    "renovate::{{#if isVulnerabilityAlert}}vulnerability{{else}}not-vulnerability{{/if}}"
+  ],
+  "pinDigests": false,
+  "enabled": true,
+  "separateMajorMinor": true,
+  "automerge": true,
+  "automergeType": "pr",
+  "automergeStrategy": "auto",
+  "schedule": [
+    "* 0-3 * * *"
+  ],
+  "packageRules": [
+    {
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "automerge": true,
+      "platformAutomerge": true,
+      "ignoreTests": false,
+      "stabilityDays": 0,
+      "prCreation": "not-pending",
+      "schedule": [
+        "* 0-3 * * *"
+      ]
+    }
+  ]
+}
