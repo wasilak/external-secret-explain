@@ -1,4 +1,5 @@
-mod aws;
+mod providers;
+mod secrets;
 
 use std::env;
 
@@ -7,7 +8,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // let secret_name = "external-secret-observability";
 
     let args: Vec<String> = env::args().collect();
-    let secret_name = args.get(1).expect("Usage: program <secret_name>");
+    let secret_name = match args.get(1) {
+        Some(secret_name) => secret_name,
+        None => {
+            eprintln!("Usage: {} <secret-name>", args[0]);
+            std::process::exit(1);
+        }
+    };
 
     println!("Fetching details for secret: {}", secret_name);
 
@@ -15,12 +22,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // aws::external_secret::list(config).await?;
 
-    let secret = aws::secret::get(config.clone(), secret_name).await?;
+    let secret = secrets::secret::get(config.clone(), secret_name).await?;
 
     let external_secret =
-        aws::external_secret::get(config.clone(), &aws::secret::get_owner(&secret)).await?;
+        secrets::external_secret::get(config.clone(), &secrets::secret::get_owner(&secret)).await?;
 
-    let cluster_secret_store = aws::cluster_secret_store::get(
+    let cluster_secret_store = secrets::cluster_secret_store::get(
         config,
         &external_secret.spec.secret_store_ref.unwrap().name,
     )
@@ -32,13 +39,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let provider_name = match &cluster_secret_store.spec.provider.kind {
-        aws::cluster_secret_store::ProviderType::Aws(_) => "aws",
-        aws::cluster_secret_store::ProviderType::Gcp(_) => "gcp",
+        secrets::cluster_secret_store::ProviderType::Aws(_) => "aws",
+        secrets::cluster_secret_store::ProviderType::Gcp(_) => "gcp",
+        secrets::cluster_secret_store::ProviderType::Oracle(oracle) => {
+            let provider = providers::oracle::OracleProvider::new();
+            println!("{:?}", provider.get_identity().get_current_user().await);
+
+            // let vatul_ocid = "ocid1.vault.oc1.eu-frankfurt-1.entqnjjeaafoa.abtheljr7gcl5vu75z5kxvmm4nwbgr4wpgh5uvsgzlvhzkq4wabywkre446a";
+            // let secret_name = String::from_str("loki").unwrap();
+            let secret_name = external_secret.spec.data_from[0].extract.key.as_str();
+
+            let result = provider.get_secret(&secret_name, &oracle.vault).await?;
+            let secret = result.text().await?;
+            println!("{:?}", secret);
+            "oracle"
+        }
     };
     println!("🔍 Secret Store Provider: {}", provider_name);
 
-    // 1. get provider name from cluster_secret_store
-    // 2. access provder and get secrets according to external_secret.spec.data_from
+    // 2. access provider and get secrets according to external_secret.spec.data_from
     // 3. get secret keys from secret.data
     // 4. figure out from which secret in merge list comes each key value
     // 5. output secret.data as YAML annotated with secret store path from which it comes

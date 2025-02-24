@@ -27,6 +27,7 @@ pub struct Provider {
 pub enum ProviderType {
     Aws(AWSProvider),
     Gcp(GCPProvider),
+    Oracle(OracleProvider),
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
@@ -42,6 +43,38 @@ pub struct AWSProvider {
 pub struct GCPProvider {
     pub project_id: String,
     pub auth_secret_ref: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct OracleProvider {
+    pub auth: OracleAuth,
+    pub principal_type: String,
+    pub region: String,
+    pub vault: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct OracleAuth {
+    pub secret_ref: OracleSecretRef,
+    pub tenancy: String,
+    pub user: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct OracleSecretRef {
+    pub fingerprint: OracleSecretKeyRef,
+    pub privatekey: OracleSecretKeyRef,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct OracleSecretKeyRef {
+    pub key: String,
+    pub name: String,
+    pub namespace: String,
 }
 
 pub async fn get(
