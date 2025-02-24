@@ -1,15 +1,8 @@
 use dirs::home_dir;
-// use kube::client::Body;
-// use oci_sdk::base_client::{encode_body, oci_signer};
-// use oci_sdk::base_client::oci_signer;
+use k8s_openapi::api::core::v1::Secret;
 use oci_sdk::{config::AuthConfig, identity::Identity, vault_secret::VaultSecret};
-// use reqwest::{Client, Method, RequestBuilder};
-// use reqwest::Client;
 use reqwest::Response;
-// use chrono::{DateTime, Utc};
 
-// use std::error::Error;
-// use serde_json::json;
 #[derive(Clone)]
 pub struct OracleProvider {
     identity: Identity,
@@ -49,6 +42,24 @@ impl OracleProvider {
     //     let client = Client::new();
     // }
 
+    pub async fn handle(
+        &self,
+        secret: Secret,
+        oracle: &crate::secrets::cluster_secret_store::OracleProvider,
+        external_secret: crate::secrets::external_secret::ExternalSecret,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // let vatul_ocid = "ocid1.vault.oc1.eu-frankfurt-1.entqnjjeaafoa.abtheljr7gcl5vu75z5kxvmm4nwbgr4wpgh5uvsgzlvhzkq4wabywkre446a";
+        // let secret_name = String::from_str("loki").unwrap();
+        let secret_name = external_secret.spec.data_from[0].extract.key.as_str();
+
+        let result = self.get_secret(&secret_name, &oracle.vault).await?;
+        let provider_secret = result.text().await?;
+        println!("{:?}", provider_secret);
+
+        println!("{:?}", secret);
+        Ok(())
+    }
+
     pub async fn get_secret(
         &self,
         secret_name: &str,
@@ -62,5 +73,3 @@ impl OracleProvider {
         return Ok(response);
     }
 }
-
-// 🔹 Function to Sign Requests Using OCI SDK

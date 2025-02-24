@@ -29,7 +29,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let cluster_secret_store = secrets::cluster_secret_store::get(
         config,
-        &external_secret.spec.secret_store_ref.unwrap().name,
+        &external_secret.clone().spec.secret_store_ref.unwrap().name,
     )
     .await?;
 
@@ -39,19 +39,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let provider_name = match &cluster_secret_store.spec.provider.kind {
-        secrets::cluster_secret_store::ProviderType::Aws(_) => "aws",
+        secrets::cluster_secret_store::ProviderType::Aws(_) => {
+            let provider = providers::aws::AWSProvider::new();
+            provider.handle(secret);
+            "aws"
+        }
         secrets::cluster_secret_store::ProviderType::Gcp(_) => "gcp",
         secrets::cluster_secret_store::ProviderType::Oracle(oracle) => {
             let provider = providers::oracle::OracleProvider::new();
             println!("{:?}", provider.get_identity().get_current_user().await);
 
-            // let vatul_ocid = "ocid1.vault.oc1.eu-frankfurt-1.entqnjjeaafoa.abtheljr7gcl5vu75z5kxvmm4nwbgr4wpgh5uvsgzlvhzkq4wabywkre446a";
-            // let secret_name = String::from_str("loki").unwrap();
-            let secret_name = external_secret.spec.data_from[0].extract.key.as_str();
-
-            let result = provider.get_secret(&secret_name, &oracle.vault).await?;
-            let secret = result.text().await?;
-            println!("{:?}", secret);
+            let _ = provider
+                .handle(secret, &oracle, external_secret.clone())
+                .await;
             "oracle"
         }
     };
