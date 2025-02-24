@@ -38,10 +38,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         serde_yaml::to_string(&cluster_secret_store.spec).unwrap()
     );
 
-    let provider_name = match &cluster_secret_store.spec.provider.kind {
+    println!("{}", serde_yaml::to_string(&external_secret.spec).unwrap());
+
+    match &cluster_secret_store.spec.provider.kind {
         secrets::cluster_secret_store::ProviderType::Aws(_) => {
             let provider = providers::aws::AWSProvider::new();
-            provider.handle(secret);
+            let _ = provider.handle(secret, external_secret.clone()).await;
             "aws"
         }
         secrets::cluster_secret_store::ProviderType::Gcp(_) => "gcp",
@@ -55,7 +57,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "oracle"
         }
     };
-    println!("🔍 Secret Store Provider: {}", provider_name);
 
     // 2. access provider and get secrets according to external_secret.spec.data_from
     // 3. get secret keys from secret.data

@@ -29,27 +29,12 @@ impl OracleProvider {
         self.identity.clone()
     }
 
-    // pub async fn get_secret(
-    //     &self,
-    //     secret_name: &str,
-    // ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-    //     let url = format!(
-    //         "{}/20180608/secrets/{}/bundle",
-    //         VAULT_BASE_URL.replace("{region}", OCI_REGION),
-    //         secret_name
-    //     );
-
-    //     let client = Client::new();
-    // }
-
     pub async fn handle(
         &self,
         secret: Secret,
         oracle: &crate::secrets::cluster_secret_store::OracleProvider,
         external_secret: crate::secrets::external_secret::ExternalSecret,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        // let vatul_ocid = "ocid1.vault.oc1.eu-frankfurt-1.entqnjjeaafoa.abtheljr7gcl5vu75z5kxvmm4nwbgr4wpgh5uvsgzlvhzkq4wabywkre446a";
-        // let secret_name = String::from_str("loki").unwrap();
         let secret_name = external_secret.spec.data_from[0].extract.key.as_str();
 
         let result = self.get_secret(&secret_name, &oracle.vault).await?;
