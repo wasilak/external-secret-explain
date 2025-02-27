@@ -1,4 +1,4 @@
-use aws_config;
+use aws_config::{self, Region};
 use aws_sdk_secretsmanager;
 use k8s_openapi::api::core::v1::Secret;
 #[derive(Clone)]
@@ -13,6 +13,7 @@ impl AWSProvider {
         &self,
         secret: Secret,
         external_secret: crate::secrets::external_secret::ExternalSecret,
+        region: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         match secret.data {
             Some(data) => {
@@ -20,7 +21,6 @@ impl AWSProvider {
                     let decoded_value = String::from_utf8(value.0).unwrap();
                     println!("{}: {}", key, decoded_value);
                 }
-                println!("Found secret data");
             }
             None => println!("No data found in secret"),
         }
@@ -32,7 +32,9 @@ impl AWSProvider {
             .map(|d| d.extract.key.clone())
             .collect();
 
-        self.iterate_over_secrets_paths(&secrets_names).await?;
+        println!("Secrets names: {:?}", secrets_names);
+        self.iterate_over_secrets_paths(&secrets_names, region)
+            .await?;
 
         Ok(())
     }
@@ -40,8 +42,10 @@ impl AWSProvider {
     pub async fn get_secrets(
         &self,
         secret_names: &Vec<String>,
+        region: &str,
     ) -> Result<Vec<(String, String)>, Box<dyn std::error::Error>> {
         let config = aws_config::defaults(aws_config::BehaviorVersion::latest())
+            .region(Region::new(region.to_string()))
             .load()
             .await;
 
@@ -57,6 +61,7 @@ impl AWSProvider {
             .secret_values()
             .iter()
             .filter_map(|secret| {
+                println!("{:?}", secret);
                 Some((
                     secret.name().unwrap_or_default().to_string(),
                     secret.secret_string().unwrap_or_default().to_string(),
@@ -70,21 +75,26 @@ impl AWSProvider {
     async fn iterate_over_secrets_paths(
         &self,
         secrets: &Vec<String>,
+        region: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        match self.get_secrets(secrets).await {
+        let secrets_paths_with_keys = hashmap::HashMap::new();
+        match self.get_secrets(secrets, region).await {
             Ok(secrets) => {
-                // println!("{:?}", &secrets);
-
+                if secrets.is_empty() {
+                    println!("No secrets found. Are you sure you are using proper AWS auth?");
+                    return Ok(());
+                }
+                println!("{:?}", secrets);
                 for secret in secrets {
                     let parsed_secret: serde_json::Value = serde_json::from_str(&secret.1).unwrap();
                     println!("\n{}:", secret.0);
 
-                    for (key, value) in parsed_secret.as_object().unwrap() {
-                        println!("{}{}", key, value);
+                    for (key, _value) in parsed_secret.as_object().unwrap() {
+                        println!("{key}");
                     }
                 }
             }
-            Err(e) => println!("Error getting secrets: {}", e),
+            Err(e) => println!("Error getting secrets. Please verify AWS auth: {}", e),
         }
         Ok(())
     }

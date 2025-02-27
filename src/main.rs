@@ -1,5 +1,6 @@
 mod providers;
 mod secrets;
+mod utils;
 
 use std::env;
 
@@ -41,9 +42,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", serde_yaml::to_string(&external_secret.spec).unwrap());
 
     match &cluster_secret_store.spec.provider.kind {
-        secrets::cluster_secret_store::ProviderType::Aws(_) => {
+        secrets::cluster_secret_store::ProviderType::Aws(aws_ref) => {
             let provider = providers::aws::AWSProvider::new();
-            let _ = provider.handle(secret, external_secret.clone()).await;
+            let _ = provider
+                .handle(secret, external_secret.clone(), &aws_ref.region)
+                .await;
+
+            utils::match_secret_keys();
             "aws"
         }
         secrets::cluster_secret_store::ProviderType::Gcp(_) => "gcp",
@@ -58,8 +63,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    // 2. access provider and get secrets according to external_secret.spec.data_from
-    // 3. get secret keys from secret.data
     // 4. figure out from which secret in merge list comes each key value
     // 5. output secret.data as YAML annotated with secret store path from which it comes
 
