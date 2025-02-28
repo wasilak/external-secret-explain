@@ -1,6 +1,8 @@
 use aws_config::{self, Region};
 use aws_sdk_secretsmanager;
 use k8s_openapi::api::core::v1::Secret;
+use std::collections::HashMap;
+
 #[derive(Clone)]
 pub struct AWSProvider {}
 
@@ -33,10 +35,42 @@ impl AWSProvider {
             .collect();
 
         println!("Secrets names: {:?}", secrets_names);
-        self.iterate_over_secrets_paths(&secrets_names, region)
+        let secrets_paths_with_keys = self
+            .iterate_over_secrets_paths(&secrets_names, region)
             .await?;
 
+        println!("{:?}", secrets_paths_with_keys);
+
         Ok(())
+    }
+
+    async fn iterate_over_secrets_paths(
+        &self,
+        secrets: &Vec<String>,
+        region: &str,
+    ) -> Result<HashMap<String, Vec<String>>, Box<dyn std::error::Error>> {
+        let mut secrets_paths_with_keys: HashMap<String, Vec<String>> = HashMap::new();
+        match self.get_secrets(secrets, region).await {
+            Ok(secrets) => {
+                if secrets.is_empty() {
+                    println!("No secrets found. Are you sure you are using proper AWS auth?");
+                    return Ok(secrets_paths_with_keys);
+                }
+
+                for secret in secrets {
+                    let parsed_secret: serde_json::Value = serde_json::from_str(&secret.1).unwrap();
+
+                    let mut secret_keys: Vec<String> = vec![];
+                    for (key, _value) in parsed_secret.as_object().unwrap() {
+                        secret_keys.push(key.to_string());
+                    }
+
+                    secrets_paths_with_keys.insert(secret.0, secret_keys);
+                }
+            }
+            Err(e) => println!("Error getting secrets. Please verify AWS auth: {}", e),
+        }
+        Ok(secrets_paths_with_keys)
     }
 
     pub async fn get_secrets(
@@ -70,32 +104,5 @@ impl AWSProvider {
             .collect();
 
         Ok(secrets)
-    }
-
-    async fn iterate_over_secrets_paths(
-        &self,
-        secrets: &Vec<String>,
-        region: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let secrets_paths_with_keys = hashmap::HashMap::new();
-        match self.get_secrets(secrets, region).await {
-            Ok(secrets) => {
-                if secrets.is_empty() {
-                    println!("No secrets found. Are you sure you are using proper AWS auth?");
-                    return Ok(());
-                }
-                println!("{:?}", secrets);
-                for secret in secrets {
-                    let parsed_secret: serde_json::Value = serde_json::from_str(&secret.1).unwrap();
-                    println!("\n{}:", secret.0);
-
-                    for (key, _value) in parsed_secret.as_object().unwrap() {
-                        println!("{key}");
-                    }
-                }
-            }
-            Err(e) => println!("Error getting secrets. Please verify AWS auth: {}", e),
-        }
-        Ok(())
     }
 }

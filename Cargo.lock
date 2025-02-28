@@ -1980,14 +1980,15 @@ dependencies = [
 [[package]]
 name = "oci-sdk"
 version = "0.3.0"
-source = "git+https://github.com/wasilak/oci-rust-sdk.git#02b470d2a1871e2ee19f50f37246f64729bf46f7"
+source = "git+https://github.com/wasilak/oci-rust-sdk.git#3632e56377476c837a7a3b9bf6de3e068be84baa"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.21.7",
  "chrono",
  "configparser",
  "home",
  "openssl",
  "reqwest",
+ "serde",
  "serde_json",
  "sha2",
  "tokio",

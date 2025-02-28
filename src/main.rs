@@ -34,12 +34,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )
     .await?;
 
-    println!(
-        "{}",
-        serde_yaml::to_string(&cluster_secret_store.spec).unwrap()
-    );
+    // println!(
+    //     "{}",
+    //     serde_yaml::to_string(&cluster_secret_store.spec).unwrap()
+    // );
 
-    println!("{}", serde_yaml::to_string(&external_secret.spec).unwrap());
+    // println!("{}", serde_yaml::to_string(&external_secret.spec).unwrap());
 
     match &cluster_secret_store.spec.provider.kind {
         secrets::cluster_secret_store::ProviderType::Aws(aws_ref) => {
@@ -54,10 +54,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         secrets::cluster_secret_store::ProviderType::Gcp(_) => "gcp",
         secrets::cluster_secret_store::ProviderType::Oracle(oracle) => {
             let provider = providers::oracle::OracleProvider::new();
-            println!("{:?}", provider.get_identity().get_current_user().await);
-
             let _ = provider
-                .handle(secret, &oracle, external_secret.clone())
+                .handle(&oracle, external_secret.clone())
+                // .handle(secret, &oracle, external_secret.clone())
                 .await;
             "oracle"
         }
