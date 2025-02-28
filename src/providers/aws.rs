@@ -1,6 +1,6 @@
+use super::common::{match_secret_keys, MatchedKey};
 use aws_config::{self, Region};
 use aws_sdk_secretsmanager;
-use k8s_openapi::api::core::v1::Secret;
 use std::collections::HashMap;
 
 #[derive(Clone)]
@@ -13,35 +13,17 @@ impl AWSProvider {
 
     pub async fn handle(
         &self,
-        secret: Secret,
-        external_secret: crate::secrets::external_secret::ExternalSecret,
+        k8s_secret_data: HashMap<String, String>,
+        data_from: Vec<String>,
         region: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        match secret.data {
-            Some(data) => {
-                for (key, value) in data {
-                    let decoded_value = String::from_utf8(value.0).unwrap();
-                    println!("{}: {}", key, decoded_value);
-                }
-            }
-            None => println!("No data found in secret"),
-        }
+    ) -> Result<Vec<MatchedKey>, Box<dyn std::error::Error>> {
+        let external_secrets_paths_with_keys =
+            self.iterate_over_secrets_paths(&data_from, region).await?;
 
-        let secrets_names: Vec<String> = external_secret
-            .spec
-            .data_from
-            .iter()
-            .map(|d| d.extract.key.clone())
-            .collect();
+        let matched_keys =
+            match_secret_keys(k8s_secret_data, external_secrets_paths_with_keys, data_from);
 
-        println!("Secrets names: {:?}", secrets_names);
-        let secrets_paths_with_keys = self
-            .iterate_over_secrets_paths(&secrets_names, region)
-            .await?;
-
-        println!("{:?}", secrets_paths_with_keys);
-
-        Ok(())
+        Ok(matched_keys)
     }
 
     async fn iterate_over_secrets_paths(
@@ -95,7 +77,6 @@ impl AWSProvider {
             .secret_values()
             .iter()
             .filter_map(|secret| {
-                println!("{:?}", secret);
                 Some((
                     secret.name().unwrap_or_default().to_string(),
                     secret.secret_string().unwrap_or_default().to_string(),

@@ -1,13 +1,22 @@
 mod providers;
 mod secrets;
-mod utils;
 
 use std::env;
 
+mod k8s;
+
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct FinalResult {
+    name: String,
+    data_from: Vec<String>,
+    provider: secrets::cluster_secret_store::ClusterSecretStoreSpec,
+    secrets: Option<Vec<providers::common::MatchedKey>>,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // let secret_name = "external-secret-observability";
-
     let args: Vec<String> = env::args().collect();
     let secret_name = match args.get(1) {
         Some(secret_name) => secret_name,
@@ -17,16 +26,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    println!("Fetching details for secret: {}", secret_name);
-
     let config = kube::Config::from_kubeconfig(&kube::config::KubeConfigOptions::default()).await?;
 
-    // aws::external_secret::list(config).await?;
-
-    let secret = secrets::secret::get(config.clone(), secret_name).await?;
-
+    let k8s_secret = k8s::Wrapper::get_secret(config.clone(), &secret_name).await?;
+    let k8s_secret_data = k8s::Wrapper::get_secret_data(&k8s_secret).await?;
     let external_secret =
-        secrets::external_secret::get(config.clone(), &secrets::secret::get_owner(&secret)).await?;
+        secrets::external_secret::get(config.clone(), &secrets::secret::get_owner(&k8s_secret))
+            .await?;
+
+    let data_from = k8s::Wrapper::get_external_secret_data_from(external_secret.clone());
 
     let cluster_secret_store = secrets::cluster_secret_store::get(
         config,
@@ -34,36 +42,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )
     .await?;
 
-    // println!(
-    //     "{}",
-    //     serde_yaml::to_string(&cluster_secret_store.spec).unwrap()
-    // );
-
-    // println!("{}", serde_yaml::to_string(&external_secret.spec).unwrap());
+    let mut final_result = FinalResult {
+        name: secret_name.clone(),
+        data_from: data_from.clone(),
+        provider: cluster_secret_store.spec.clone(),
+        secrets: None,
+    };
 
     match &cluster_secret_store.spec.provider.kind {
         secrets::cluster_secret_store::ProviderType::Aws(aws_ref) => {
             let provider = providers::aws::AWSProvider::new();
-            let _ = provider
-                .handle(secret, external_secret.clone(), &aws_ref.region)
+            let matched_keys = provider
+                .handle(k8s_secret_data, data_from, &aws_ref.region)
                 .await;
 
-            utils::match_secret_keys();
-            "aws"
+            final_result.secrets = Some(matched_keys.unwrap());
         }
-        secrets::cluster_secret_store::ProviderType::Gcp(_) => "gcp",
+        secrets::cluster_secret_store::ProviderType::Gcp(_) => (),
         secrets::cluster_secret_store::ProviderType::Oracle(oracle) => {
             let provider = providers::oracle::OracleProvider::new();
             let _ = provider
                 .handle(&oracle, external_secret.clone())
                 // .handle(secret, &oracle, external_secret.clone())
                 .await;
-            "oracle"
         }
     };
 
-    // 4. figure out from which secret in merge list comes each key value
-    // 5. output secret.data as YAML annotated with secret store path from which it comes
+    println!("{}", serde_yaml::to_string(&final_result).unwrap());
 
     Ok(())
 }

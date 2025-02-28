@@ -1,13 +1,5 @@
 use dirs::home_dir;
-// use k8s_openapi::api::core::v1::Secret;
 use oci_sdk::{config::AuthConfig, identity::Identity, vault_secret::Vault};
-// use serde::Deserialize;
-// use std::collections::HashMap;
-
-// use crate::secrets::secret;
-
-// use crate::secrets::secret;
-// use reqwest::Response;
 
 #[derive(Clone)]
 pub struct OracleProvider {
@@ -37,12 +29,10 @@ impl OracleProvider {
 
     pub async fn handle(
         &self,
-        // secret: Secret,
         oracle: &crate::secrets::cluster_secret_store::OracleProvider,
         external_secret: crate::secrets::external_secret::ExternalSecret,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let secret_name = external_secret.spec.data_from[0].extract.key.as_str();
-        // println!("{:?}", secret);
 
         let vault_secret_provider = Vault::new(self.get_identity());
 

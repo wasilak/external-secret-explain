@@ -1,5 +1,3 @@
-// use kube::api::ListParams;
-// use kube::{Client};
 use kube::{Api, Config};
 use kube_derive::CustomResource;
 use schemars::JsonSchema;
@@ -45,25 +43,3 @@ pub async fn get(config: Config, name: &str) -> Result<ExternalSecret, Box<dyn s
     let external_secret = api.get(name).await?;
     Ok(external_secret)
 }
-
-// pub async fn list(config: Config) -> Result<(), Box<dyn std::error::Error>> {
-//     let client: Client = kube::Client::try_from(config)?;
-//     let secrets: Api<ExternalSecret> = Api::default_namespaced(client);
-
-//     let list_params = ListParams::default();
-
-//     for secret in secrets.list(&list_params).await? {
-//         println!("{:?}", secret.metadata.name.unwrap_or_default());
-//         println!(
-//             "secret_store_ref: {:?}",
-//             secret
-//                 .spec
-//                 .secret_store_ref
-//                 .as_ref()
-//                 .map(|ref_name| ref_name.name.clone())
-//                 .unwrap_or_else(|| "no-ref".to_string())
-//         );
-//     }
-
-//     Ok(())
-// }
