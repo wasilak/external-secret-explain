@@ -1,5 +1,3 @@
-use crate::secrets::secret;
-
 use super::common::{match_secret_keys, MatchedKey};
 use dirs::home_dir;
 use oci_sdk::{config::AuthConfig, identity::Identity, vault_secret::Vault};
@@ -48,12 +46,6 @@ impl OracleProvider {
             &data_from,
         );
 
-        // let secret_name = external_secret.spec.data_from[0].extract.key.as_str();
-
-        // let vault_secret_provider = Vault::new(self.get_identity());
-
-        // self.iterate_over_secrets_paths(secret_name, &oracle.vault, vault_secret_provider)
-        //     .await?;
         Ok(matched_keys)
     }
 
