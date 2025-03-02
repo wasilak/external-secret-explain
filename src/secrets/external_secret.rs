@@ -36,8 +36,11 @@ pub struct ExtractRef {
     pub key: String,
 }
 
-pub async fn get(config: Config, name: &str) -> Result<ExternalSecret, Box<dyn std::error::Error>> {
-    let client = kube::Client::try_from(config)?;
+pub async fn get(
+    config: &Config,
+    name: &str,
+) -> Result<ExternalSecret, Box<dyn std::error::Error>> {
+    let client = kube::Client::try_from(config.clone())?;
     let api: Api<ExternalSecret> = Api::default_namespaced(client);
 
     let external_secret = api.get(name).await?;

@@ -8,10 +8,10 @@ pub struct Wrapper {}
 
 impl Wrapper {
     pub async fn get_secret(
-        config: Config,
+        config: &Config,
         secret_name: &str,
     ) -> Result<Secret, Box<dyn std::error::Error>> {
-        let secret = secrets::secret::get(config, secret_name).await?;
+        let secret = secrets::secret::get(config.clone(), secret_name).await?;
         Ok(secret)
     }
 

@@ -13,15 +13,18 @@ impl AWSProvider {
 
     pub async fn handle(
         &self,
-        k8s_secret_data: HashMap<String, String>,
-        data_from: Vec<String>,
+        k8s_secret_data: &HashMap<String, String>,
+        data_from: &Vec<String>,
         region: &str,
     ) -> Result<Vec<MatchedKey>, Box<dyn std::error::Error>> {
         let external_secrets_paths_with_keys =
             self.iterate_over_secrets_paths(&data_from, region).await?;
 
-        let matched_keys =
-            match_secret_keys(k8s_secret_data, external_secrets_paths_with_keys, data_from);
+        let matched_keys = match_secret_keys(
+            &k8s_secret_data,
+            external_secrets_paths_with_keys,
+            data_from,
+        );
 
         Ok(matched_keys)
     }

@@ -9,14 +9,14 @@ pub struct MatchedKey {
 }
 
 pub fn match_secret_keys(
-    k8s_secret: HashMap<String, String>,
+    k8s_secret: &HashMap<String, String>,
     external_secrets_paths_with_keys: HashMap<String, Vec<String>>,
-    data_from: Vec<String>,
+    data_from: &Vec<String>,
 ) -> Vec<MatchedKey> {
     let mut matched_keys: HashMap<String, MatchedKey> = HashMap::new();
 
     for (k, v) in k8s_secret.iter() {
-        for path in &data_from {
+        for path in data_from {
             let keys = match external_secrets_paths_with_keys.get(path) {
                 Some(keys) => keys,
                 None => {
