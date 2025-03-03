@@ -1,7 +1,7 @@
 mod k8s;
 mod providers;
 mod secrets;
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use serde::{Deserialize, Serialize};
 
 #[derive(Parser, Debug)]
@@ -10,6 +10,16 @@ struct Args {
     /// Name of Kubernetes secret
     #[arg()]
     secret_name: String,
+
+    /// Output format
+    #[arg(short, long, default_value = "yaml")]
+    output: OutputFormat,
+}
+
+#[derive(Debug, Clone, ValueEnum)]
+enum OutputFormat {
+    Yaml,
+    Json,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -67,13 +77,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    println!(
-        "{}",
-        match serde_yaml::to_string(&final_result) {
+    let output = match args.output {
+        OutputFormat::Yaml => match serde_yaml::to_string(&final_result) {
             Ok(s) => s,
             Err(e) => e.to_string(),
-        }
-    );
+        },
+        OutputFormat::Json => match serde_json::to_string(&final_result) {
+            Ok(s) => s,
+            Err(e) => e.to_string(),
+        },
+    };
+
+    println!("{}", output);
 
     Ok(())
 }
