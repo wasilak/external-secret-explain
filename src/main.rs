@@ -1,11 +1,16 @@
+mod k8s;
 mod providers;
 mod secrets;
-
-use std::env;
-
-mod k8s;
-
+use clap::Parser;
 use serde::{Deserialize, Serialize};
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Name of Kubernetes secret
+    #[arg()]
+    secret_name: String,
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct FinalResult {
@@ -17,18 +22,11 @@ struct FinalResult {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args: Vec<String> = env::args().collect();
-    let secret_name = match args.get(1) {
-        Some(secret_name) => secret_name,
-        None => {
-            eprintln!("Usage: {} <secret-name>", args[0]);
-            std::process::exit(1);
-        }
-    };
+    let args = Args::parse();
 
     let config = kube::Config::from_kubeconfig(&kube::config::KubeConfigOptions::default()).await?;
 
-    let k8s_secret = k8s::Wrapper::get_secret(&config, &secret_name).await?;
+    let k8s_secret = k8s::Wrapper::get_secret(&config, &args.secret_name).await?;
     let k8s_secret_data = k8s::Wrapper::get_secret_data(&k8s_secret).await?;
     let external_secret =
         secrets::external_secret::get(&config, &secrets::secret::get_owner(&k8s_secret)).await?;
@@ -42,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .await?;
 
     let mut final_result = FinalResult {
-        name: secret_name.clone(),
+        name: args.secret_name,
         data_from: data_from.clone(),
         provider: cluster_secret_store.spec.clone(),
         secrets: None,
