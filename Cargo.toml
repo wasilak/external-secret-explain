@@ -11,22 +11,26 @@ base64 = "~0"
 clap = { version = "~4", features = ["derive"] }
 dirs = "~6"
 k8s-openapi = { version = "~0", features = ["latest"] }
-kube = { version = "~0", features = [
-    "client",
-    "runtime",
-    "derive",
-    "rustls-tls",
-] }
+kube = { version = "~0", features = ["client", "runtime", "derive", "rustls-tls"] }
 kube-client = "~0"
 kube-derive = "~0"
 # oci-sdk = "0.3.0"
 # oci-sdk = { path = "../oci-rust-sdk/" }
 oci-sdk = { git = "https://github.com/wasilak/oci-rust-sdk.git" }
+once_cell = { version = "~1" }
+opentelemetry = { version = "~0" }
+opentelemetry-appender-tracing = { version = "~0" }
+opentelemetry-otlp = { version = "~0", features = ["http-proto", "tokio"] }
+opentelemetry-stdout = "~0"
+opentelemetry_sdk = { version = "~0", features = ["rt-tokio", "logs"] }
 reqwest = "~0"
 schemars = "~0"
 serde = { version = "~1", features = ["derive"] }
 serde_json = "~1"
 serde_yaml = "~0"
 tokio = { version = "~1", features = ["full"] }
+tracing = "~0"
+tracing-opentelemetry = "~0"
+tracing-subscriber = { version = "~0", features = ["env-filter", "json"] }
 [dev-dependencies]
 async-std = "~1"

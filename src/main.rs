@@ -1,6 +1,7 @@
 mod k8s;
 mod providers;
 mod secrets;
+mod utils;
 use clap::{Parser, ValueEnum};
 use serde::{Deserialize, Serialize};
 
@@ -33,6 +34,8 @@ struct FinalResult {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
+
+    utils::setup_logging();
 
     let config = kube::Config::from_kubeconfig(&kube::config::KubeConfigOptions::default()).await?;
 
