@@ -2,11 +2,16 @@ use k8s_openapi::api::core::v1::Secret;
 use kube::{Api, Client, Config};
 
 pub async fn get(config: Config, secret_name: &str) -> Result<Secret, Box<dyn std::error::Error>> {
-    let client: Client = kube::Client::try_from(config)?;
+    let client: Client = match kube::Client::try_from(config) {
+        Ok(client) => client,
+        Err(e) => return Err(Box::new(e)),
+    };
     let api: Api<Secret> = Api::default_namespaced(client);
 
-    let secret = api.get(secret_name).await?;
-    Ok(secret)
+    match api.get(secret_name).await {
+        Ok(secret) => return Ok(secret),
+        Err(e) => return Err(Box::new(e)),
+    };
 }
 
 pub fn get_owner(secret: &Secret) -> String {

@@ -15,6 +15,7 @@ pub fn setup_logging() {
         .with_file(true)
         .with_line_number(true)
         .with_thread_ids(false)
+        .with_level(true)
         .with_thread_names(false);
 
     if log_format == "json" {

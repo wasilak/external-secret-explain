@@ -2,6 +2,7 @@ use super::common::{match_secret_keys, MatchedKey};
 use dirs::home_dir;
 use oci_sdk::{config::AuthConfig, identity::Identity, vault_secret::Vault};
 use std::collections::HashMap;
+use tracing::error;
 
 #[derive(Clone)]
 pub struct OracleProvider {
@@ -36,9 +37,13 @@ impl OracleProvider {
         oracle: &crate::secrets::cluster_secret_store::OracleProvider,
     ) -> Result<Vec<MatchedKey>, Box<dyn std::error::Error>> {
         let vault_secret_provider = Vault::new(self.get_identity());
-        let external_secrets_paths_with_keys = self
+        let external_secrets_paths_with_keys = match self
             .iterate_over_secrets_paths(&data_from, &oracle.vault, vault_secret_provider)
-            .await?;
+            .await
+        {
+            Ok(secrets) => secrets,
+            Err(e) => return Err(e),
+        };
 
         let matched_keys = match_secret_keys(
             &k8s_secret_data,
@@ -63,12 +68,19 @@ impl OracleProvider {
                 .await
             {
                 Ok(secret) => {
-                    let secret_content = secret.get_json().await?;
+                    let secret_content = match secret.get_json().await {
+                        Ok(content) => content,
+                        Err(e) => {
+                            error!("Error getting secret content: {}", e);
+                            continue;
+                        }
+                    };
+
                     let secret_keys = secret_content.keys().cloned().collect();
                     secrets_paths_with_keys.insert(secret_name.to_string(), secret_keys);
                 }
                 Err(e) => {
-                    println!("Error getting secret: {}", e);
+                    error!("Error getting secret: {}", e);
                     continue;
                 }
             };
