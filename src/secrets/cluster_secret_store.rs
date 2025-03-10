@@ -81,9 +81,14 @@ pub async fn get(
     config: Config,
     name: &str,
 ) -> Result<ClusterSecretStore, Box<dyn std::error::Error>> {
-    let client = kube::Client::try_from(config)?;
+    let client = match kube::Client::try_from(config) {
+        Ok(client) => client,
+        Err(e) => return Err(Box::new(e)),
+    };
     let api: Api<ClusterSecretStore> = Api::all(client);
 
-    let external_secret = api.get(name).await?;
-    Ok(external_secret)
+    match api.get(name).await {
+        Ok(external_secret) => return Ok(external_secret),
+        Err(e) => return Err(Box::new(e)),
+    };
 }

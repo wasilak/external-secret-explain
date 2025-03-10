@@ -1,8 +1,10 @@
 mod k8s;
 mod providers;
 mod secrets;
+mod utils;
 use clap::{Parser, ValueEnum};
 use serde::{Deserialize, Serialize};
+use tracing::error;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -34,12 +36,36 @@ struct FinalResult {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
-    let config = kube::Config::from_kubeconfig(&kube::config::KubeConfigOptions::default()).await?;
+    utils::setup_logging();
 
-    let k8s_secret = k8s::Wrapper::get_secret(&config, &args.secret_name).await?;
-    let k8s_secret_data = k8s::Wrapper::get_secret_data(&k8s_secret).await?;
+    let config = kube::Config::from_kubeconfig(&kube::config::KubeConfigOptions::default())
+        .await
+        .unwrap_or_else(|e| {
+            error!("Error getting kubeconfig: {}", e.to_string());
+            std::process::exit(1);
+        });
+
+    let k8s_secret = k8s::Wrapper::get_secret(&config, &args.secret_name)
+        .await
+        .unwrap_or_else(|e| {
+            error!("Error getting secret: {}", e.to_string());
+            std::process::exit(1);
+        });
+
+    let k8s_secret_data = k8s::Wrapper::get_secret_data(&k8s_secret)
+        .await
+        .unwrap_or_else(|e| {
+            error!("Error getting secret data: {}", e.to_string());
+            std::process::exit(1);
+        });
+
     let external_secret =
-        secrets::external_secret::get(&config, &secrets::secret::get_owner(&k8s_secret)).await?;
+        secrets::external_secret::get(&config, &secrets::secret::get_owner(&k8s_secret))
+            .await
+            .unwrap_or_else(|e| {
+                error!("Error getting external secret: {}", e.to_string());
+                std::process::exit(1);
+            });
 
     let data_from = k8s::Wrapper::get_external_secret_data_from(external_secret.clone());
 
@@ -47,7 +73,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         config,
         &external_secret.clone().spec.secret_store_ref.unwrap().name,
     )
-    .await?;
+    .await
+    .unwrap_or_else(|e| {
+        error!(
+            "Error getting cluster secret store
+        : {}",
+            e.to_string()
+        );
+        std::process::exit(1);
+    });
 
     let mut final_result = FinalResult {
         name: args.secret_name,

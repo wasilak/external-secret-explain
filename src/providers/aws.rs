@@ -2,6 +2,7 @@ use super::common::{match_secret_keys, MatchedKey};
 use aws_config::{self, Region};
 use aws_sdk_secretsmanager;
 use std::collections::HashMap;
+use tracing::{error, warn};
 
 #[derive(Clone)]
 pub struct AWSProvider {}
@@ -18,7 +19,10 @@ impl AWSProvider {
         region: &str,
     ) -> Result<Vec<MatchedKey>, Box<dyn std::error::Error>> {
         let external_secrets_paths_with_keys =
-            self.iterate_over_secrets_paths(&data_from, region).await?;
+            match self.iterate_over_secrets_paths(&data_from, region).await {
+                Ok(secrets) => secrets,
+                Err(e) => return Err(e),
+            };
 
         let matched_keys = match_secret_keys(
             &k8s_secret_data,
@@ -38,7 +42,7 @@ impl AWSProvider {
         match self.get_secrets(secrets, region).await {
             Ok(secrets) => {
                 if secrets.is_empty() {
-                    println!("No secrets found. Are you sure you are using proper AWS auth?");
+                    warn!("No secrets found. Are you sure you are using proper AWS auth?");
                     return Ok(secrets_paths_with_keys);
                 }
 
@@ -53,7 +57,7 @@ impl AWSProvider {
                     secrets_paths_with_keys.insert(secret.0, secret_keys);
                 }
             }
-            Err(e) => println!("Error getting secrets. Please verify AWS auth: {}", e),
+            Err(e) => error!("Error getting secrets. Please verify AWS auth: {}", e),
         }
         Ok(secrets_paths_with_keys)
     }
@@ -70,11 +74,15 @@ impl AWSProvider {
 
         let client = aws_sdk_secretsmanager::Client::new(&config);
 
-        let response = client
+        let response = match client
             .batch_get_secret_value()
             .set_secret_id_list(Some(secret_names.clone()))
             .send()
-            .await?;
+            .await
+        {
+            Ok(response) => response,
+            Err(e) => return Err(Box::new(e)),
+        };
 
         let secrets = response
             .secret_values()

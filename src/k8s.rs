@@ -3,6 +3,7 @@ use super::secrets;
 use k8s_openapi::api::core::v1::Secret;
 use kube_client::config::Config;
 use std::collections::HashMap;
+use tracing::warn;
 
 pub struct Wrapper {}
 
@@ -11,7 +12,10 @@ impl Wrapper {
         config: &Config,
         secret_name: &str,
     ) -> Result<Secret, Box<dyn std::error::Error>> {
-        let secret = secrets::secret::get(config.clone(), secret_name).await?;
+        let secret = match secrets::secret::get(config.clone(), secret_name).await {
+            Ok(secret) => secret,
+            Err(e) => return Err(e),
+        };
         Ok(secret)
     }
 
@@ -27,7 +31,7 @@ impl Wrapper {
                     secret_data.insert(key.clone(), decoded_value);
                 }
             }
-            None => println!("No data found in secret"),
+            None => warn!("No data found in secret"),
         }
 
         Ok(secret_data)
