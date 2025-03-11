@@ -22,42 +22,51 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        arch: [x86_64, aarch64]
+        rust_target: 
+          - x86_64-unknown-linux-gnu
+          - aarch64-unknown-linux-gnu
+          - x86_64-apple-darwin
+          - aarch64-apple-darwin
         include:
-          - os: ubuntu-latest
-            rust_target: x86_64-unknown-linux-gnu
-          - os: ubuntu-latest
-            rust_target: aarch64-unknown-linux-gnu
-          - os: macos-latest
-            rust_target: x86_64-apple-darwin
-          - os: macos-latest
-            rust_target: aarch64-apple-darwin
+          - rust_target: x86_64-unknown-linux-gnu
+            use_zig: false
+          - rust_target: aarch64-unknown-linux-gnu
+            use_zig: false
+          - rust_target: x86_64-apple-darwin
+            use_zig: true
+          - rust_target: aarch64-apple-darwin
+            use_zig: true
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
-          target: ${{ matrix.rust_target }}
+      - name: Install Rust target
+        run: rustup target add ${{ matrix.rust_target }}
+
+      - name: Install cargo-zigbuild (for macOS cross-compilation)
+        if: matrix.use_zig == true
+        run: cargo install cargo-zigbuild
 
       - name: Build executable
         run: |
           mkdir -p ./dist
-          cargo build --release --target ${{ matrix.rust_target }}
-          mv target/${{ matrix.rust_target }}/release/${{ github.event.repository.name }} ./dist/${{ github.event.repository.name }}-${{ matrix.os }}-${{ matrix.arch }}
+          if [ "${{ matrix.use_zig }}" == "true" ]; then
+            cargo zigbuild --release --target ${{ matrix.rust_target }}
+          else
+            cargo build --release --target ${{ matrix.rust_target }}
+          fi
+          mv target/${{ matrix.rust_target }}/release/${{ github.event.repository.name }} ./dist/${{ github.event.repository.name }}-${{ matrix.rust_target }}
 
-      - name: Run tests
+      - name: Run tests (only for native Linux builds)
+        if: matrix.use_zig == false
         run: cargo test --verbose --target ${{ matrix.rust_target }}
 
       - name: Compress executable
         run: |
           cd ./dist
-          chmod +x ${{ github.event.repository.name }}-${{ matrix.os }}-${{ matrix.arch }}
-          zip ${{ github.event.repository.name }}-${{ matrix.os }}-${{ matrix.arch }}.zip ${{ github.event.repository.name }}-${{ matrix.os }}-${{ matrix.arch }}
+          chmod +x ${{ github.event.repository.name }}-${{ matrix.rust_target }}
+          zip ${{ github.event.repository.name }}-${{ matrix.rust_target }}.zip ${{ github.event.repository.name }}-${{ matrix.rust_target }}
           ls -lha .
 
       - name: Release
