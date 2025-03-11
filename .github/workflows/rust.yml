@@ -17,38 +17,47 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
+  release:
+    name: Release - ${{ matrix.platform.os-name }}
     strategy:
       matrix:
-        target:
-          - x86_64-unknown-linux-gnu
-          - aarch64-unknown-linux-gnu
-          - x86_64-apple-darwin
-          - aarch64-apple-darwin
+        platform:
+          - os-name: Linux-x86_64
+            runs-on: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+
+          - os-name: Linux-aarch64
+            runs-on: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+
+          - os-name: Windows-x86_64
+            runs-on: windows-latest
+            target: x86_64-pc-windows-msvc
+
+          - os-name: macOS-x86_64
+            runs-on: macos-latest
+            target: x86_64-apple-darwin
+
+          - os-name: macOS-aarch64
+            runs-on: macos-latest
+            target: aarch64-apple-darwin
+
+    runs-on: ${{ matrix.platform.runs-on }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install cross
-        run: cargo install cross
-
-      - name: Build
-        run: cross build --release --target ${{ matrix.target }}
-
-      - name: Run tests
-        run: cross test --release --target ${{ matrix.target }}
-
-      - name: Package
-        run: |
-          mkdir -p dist
-          cp target/${{ matrix.target }}/release/your_executable_name dist/your_executable_name-${{ matrix.target }}
-          tar -czvf dist/your_executable_name-${{ matrix.target }}.tar.gz -C dist your_executable_name-${{ matrix.target }}
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+      - name: Build binary (Cross-Compile)
+        uses: houseabsolute/actions-rust-cross@v1
         with:
-          name: ${{ matrix.target }}-build
-          path: dist/your_executable_name-${{ matrix.target }}.tar.gz
+          target: ${{ matrix.platform.target }}
+          args: "--locked --release"
+          strip: true # Reduce binary size
+
+      - name: Publish Artifacts and Release
+        uses: houseabsolute/actions-rust-release@v0
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          executable-name: my-app
+          target: ${{ matrix.platform.target }}
