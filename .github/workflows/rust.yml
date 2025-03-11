@@ -31,7 +31,7 @@ jobs:
           - rust_target: x86_64-unknown-linux-gnu
             use_zig: false
           - rust_target: aarch64-unknown-linux-gnu
-            use_zig: false
+            use_zig: true
           - rust_target: x86_64-apple-darwin
             use_zig: true
           - rust_target: aarch64-apple-darwin
@@ -44,7 +44,11 @@ jobs:
       - name: Install Rust target
         run: rustup target add ${{ matrix.rust_target }}
 
-      - name: Install cargo-zigbuild (for macOS cross-compilation)
+      - name: Install dependencies for ARM cross-compilation
+        if: matrix.rust_target == 'aarch64-unknown-linux-gnu'
+        run: sudo apt update && sudo apt install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+
+      - name: Install cargo-zigbuild (for macOS & aarch64 cross-compilation)
         if: matrix.use_zig == true
         run: cargo install cargo-zigbuild
 
@@ -59,7 +63,7 @@ jobs:
           mv target/${{ matrix.rust_target }}/release/${{ github.event.repository.name }} ./dist/${{ github.event.repository.name }}-${{ matrix.rust_target }}
 
       - name: Run tests (only for native Linux builds)
-        if: matrix.use_zig == false
+        if: matrix.rust_target == 'x86_64-unknown-linux-gnu'
         run: cargo test --verbose --target ${{ matrix.rust_target }}
 
       - name: Compress executable
