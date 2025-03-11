@@ -22,67 +22,33 @@ jobs:
 
     strategy:
       matrix:
-        rust_target: 
+        target:
           - x86_64-unknown-linux-gnu
           - aarch64-unknown-linux-gnu
           - x86_64-apple-darwin
           - aarch64-apple-darwin
-        include:
-          - rust_target: x86_64-unknown-linux-gnu
-            use_zig: false
-          - rust_target: aarch64-unknown-linux-gnu
-            use_zig: true
-          - rust_target: x86_64-apple-darwin
-            use_zig: true
-          - rust_target: aarch64-apple-darwin
-            use_zig: true
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Rust target
-        run: rustup target add ${{ matrix.rust_target }}
+      - name: Install cross
+        run: cargo install cross
 
-      - name: Install Zig for `cargo-zigbuild`
-        if: matrix.use_zig == true
+      - name: Build
+        run: cross build --release --target ${{ matrix.target }}
+
+      - name: Run tests
+        run: cross test --release --target ${{ matrix.target }}
+
+      - name: Package
         run: |
-          curl -L https://ziglang.org/download/latest/zig-linux-x86_64.tar.xz -o zig.tar.xz
-          tar -xf zig.tar.xz
-          mv zig-* zig
-          echo "$PWD/zig" >> $GITHUB_PATH
-          rm zig.tar.xz
+          mkdir -p dist
+          cp target/${{ matrix.target }}/release/your_executable_name dist/your_executable_name-${{ matrix.target }}
+          tar -czvf dist/your_executable_name-${{ matrix.target }}.tar.gz -C dist your_executable_name-${{ matrix.target }}
 
-      - name: Install cargo-zigbuild (for macOS & aarch64 cross-compilation)
-        if: matrix.use_zig == true
-        run: cargo install cargo-zigbuild
-
-      - name: Build executable
-        run: |
-          mkdir -p ./dist
-          if [ "${{ matrix.use_zig }}" == "true" ]; then
-            cargo zigbuild --release --target ${{ matrix.rust_target }}
-          else
-            cargo build --release --target ${{ matrix.rust_target }}
-          fi
-          mv target/${{ matrix.rust_target }}/release/${{ github.event.repository.name }} ./dist/${{ github.event.repository.name }}-${{ matrix.rust_target }}
-
-      - name: Run tests (only for native Linux builds)
-        if: matrix.rust_target == 'x86_64-unknown-linux-gnu'
-        run: cargo test --verbose --target ${{ matrix.rust_target }}
-
-      - name: Compress executable
-        run: |
-          cd ./dist
-          chmod +x ${{ github.event.repository.name }}-${{ matrix.rust_target }}
-          zip ${{ github.event.repository.name }}-${{ matrix.rust_target }}.zip ${{ github.event.repository.name }}-${{ matrix.rust_target }}
-          ls -lha .
-
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          generate_release_notes: true
-          repository: ${{ github.repository }}
-          files: |
-            dist/${{ github.event.repository.name }}-*.zip
+          name: ${{ matrix.target }}-build
+          path: dist/your_executable_name-${{ matrix.target }}.tar.gz
