@@ -78,3 +78,4 @@ jobs:
         with:
           executable-name: external-secret-explain
           target: ${{ matrix.platform.target }}
+          changes-file: ""
