@@ -13,6 +13,10 @@ on:
       - "charts/**"
   workflow_dispatch:
 
+permissions:
+  contents: write  # ✅ Allows release creation
+  packages: write  # ✅ (Optional) Needed for publishing Rust crates
+
 env:
   CARGO_TERM_COLOR: always
 
