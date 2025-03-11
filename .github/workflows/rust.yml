@@ -44,9 +44,14 @@ jobs:
       - name: Install Rust target
         run: rustup target add ${{ matrix.rust_target }}
 
-      - name: Install dependencies for ARM cross-compilation
-        if: matrix.rust_target == 'aarch64-unknown-linux-gnu'
-        run: sudo apt update && sudo apt install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+      - name: Install Zig for `cargo-zigbuild`
+        if: matrix.use_zig == true
+        run: |
+          curl -L https://ziglang.org/download/latest/zig-linux-x86_64.tar.xz -o zig.tar.xz
+          tar -xf zig.tar.xz
+          mv zig-* zig
+          echo "$PWD/zig" >> $GITHUB_PATH
+          rm zig.tar.xz
 
       - name: Install cargo-zigbuild (for macOS & aarch64 cross-compilation)
         if: matrix.use_zig == true
