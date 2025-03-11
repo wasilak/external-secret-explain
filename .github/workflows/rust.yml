@@ -30,9 +30,10 @@ jobs:
             runs-on: ubuntu-latest
             target: aarch64-unknown-linux-musl
 
-          - os-name: Windows-x86_64
-            runs-on: windows-latest
-            target: x86_64-pc-windows-msvc
+          # takes forever to build
+          # - os-name: Windows-x86_64
+          #   runs-on: windows-latest
+          #   target: x86_64-pc-windows-msvc
 
           - os-name: macOS-x86_64
             runs-on: macos-latest
@@ -75,5 +76,5 @@ jobs:
         uses: houseabsolute/actions-rust-release@v0
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          executable-name: my-app
+          executable-name: external-secret-explain
           target: ${{ matrix.platform.target }}
