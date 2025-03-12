@@ -1,0 +1,85 @@
+name: Rust CI
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - "*"
+    paths-ignore:
+      - "charts/**"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "charts/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write  # ✅ Allows release creation
+  packages: write  # ✅ (Optional) Needed for publishing Rust crates
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  release:
+    name: Release - ${{ matrix.platform.os-name }}
+    strategy:
+      matrix:
+        platform:
+          - os-name: Linux-x86_64
+            runs-on: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+
+          - os-name: Linux-aarch64
+            runs-on: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+
+          # takes forever to build
+          # - os-name: Windows-x86_64
+          #   runs-on: windows-latest
+          #   target: x86_64-pc-windows-msvc
+
+          - os-name: macOS-x86_64
+            runs-on: macos-latest
+            target: x86_64-apple-darwin
+
+          - os-name: macOS-aarch64
+            runs-on: macos-latest
+            target: aarch64-apple-darwin
+
+    runs-on: ${{ matrix.platform.runs-on }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: houseabsolute/actions-rust-cross@v1
+        with:
+          target: ${{ matrix.platform.target }}
+
+      - name: Install dependencies for MUSL & OpenSSL (Linux Only)
+        if: contains(matrix.platform.target, 'linux-musl')
+        run: sudo apt update && sudo apt install -y musl-tools pkg-config libssl-dev
+
+      - name: Set environment variables for OpenSSL (Linux MUSL Only)
+        if: contains(matrix.platform.target, 'linux-musl')
+        run: |
+          echo "OPENSSL_STATIC=1" >> $GITHUB_ENV
+          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
+          echo "PKG_CONFIG_SYSROOT_DIR=/" >> $GITHUB_ENV
+
+      - name: Build binary (Cross-Compile)
+        uses: houseabsolute/actions-rust-cross@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          args: "--locked --release"
+          strip: true # Reduce binary size
+
+      - name: Publish Artifacts and Release
+        uses: houseabsolute/actions-rust-release@v0
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          executable-name: external-secret-explain
+          target: ${{ matrix.platform.target }}
+          changes-file: ""
