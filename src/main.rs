@@ -36,6 +36,8 @@ struct FinalResult {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
+    let _ = rustls::crypto::ring::default_provider().install_default();
+
     utils::setup_logging();
 
     let config = kube::Config::from_kubeconfig(&kube::config::KubeConfigOptions::default())
