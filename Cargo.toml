@@ -18,7 +18,7 @@ kube = { version = "0", features = [
     "rustls-tls",
 ] }
 kube-client = "0"
-kube-derive = "0"
+kube-derive = "1"
 oci-sdk = { git = "https://github.com/wasilak/oci-rust-sdk.git" }
 once_cell = "1"
 opentelemetry = { version = "0" }
