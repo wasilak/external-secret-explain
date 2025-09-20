@@ -11,7 +11,7 @@ base64 = "0"
 clap = { version = "4", features = ["derive"] }
 dirs = "6"
 k8s-openapi = { version = "0", features = ["latest"] }
-kube = { version = "0", features = [
+kube = { version = "2", features = [
     "client",
     "runtime",
     "derive",
