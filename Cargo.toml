@@ -4,21 +4,21 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-k8s-openapi = { version = "0.24", features = ["v1_28"] }
+k8s-openapi = { version = "0.26.0", features = ["v1_30"] }
 aws-config = "1"
 aws-sdk-secretsmanager = "1"
 aws-types = "1"
 base64 = "0"
 clap = { version = "4", features = ["derive"] }
 dirs = "6"
-kube = { version = "0.99", features = [
+kube = { version = "2.0.1", features = [
     "derive",
     "runtime",
     "client",
     "rustls-tls",
 ] }
-kube-client = "0.99"
-kube-derive = "0.99"
+kube-client = "2.0.1"
+kube-derive = "2.0.1"
 oci-sdk = { git = "https://github.com/wasilak/oci-rust-sdk.git" }
 once_cell = "1"
 opentelemetry = { version = "0" }
@@ -27,7 +27,7 @@ opentelemetry-otlp = { version = "0", features = ["http-proto", "tokio"] }
 opentelemetry-stdout = "0"
 opentelemetry_sdk = { version = "0", features = ["rt-tokio", "logs"] }
 reqwest = "0"
-schemars = "0.8.22"
+schemars = "1.0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0"
