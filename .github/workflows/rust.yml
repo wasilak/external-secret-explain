@@ -14,14 +14,15 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write  # ✅ Allows release creation
-  packages: write  # ✅ (Optional) Needed for publishing Rust crates
+  contents: write # ✅ Allows release creation
+  packages: write # ✅ (Optional) Needed for publishing Rust crates
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   release:
+    if: github.actor != 'renovate[bot]' # Exclude Renovate bot pull requests
     name: Release - ${{ matrix.platform.os-name }}
     strategy:
       matrix:
