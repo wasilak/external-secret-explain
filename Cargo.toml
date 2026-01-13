@@ -11,7 +11,7 @@ aws-types = "1"
 base64 = "0"
 clap = { version = "4", features = ["derive"] }
 dirs = "6"
-kube = { version = "2.0.1", features = [
+kube = { version = "3.0.0", features = [
     "derive",
     "runtime",
     "client",
