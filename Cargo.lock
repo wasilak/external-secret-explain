@@ -527,7 +527,7 @@ dependencies = [
  "hyper-util",
  "pin-project-lite",
  "rustls 0.21.12",
- "rustls 0.23.38",
+ "rustls 0.23.39",
  "rustls-native-certs",
  "rustls-pki-types",
  "tokio",
@@ -1229,7 +1229,7 @@ dependencies = [
  "opentelemetry-stdout",
  "opentelemetry_sdk",
  "reqwest",
- "rustls 0.23.38",
+ "rustls 0.23.39",
  "schemars",
  "serde",
  "serde_json",
@@ -1690,7 +1690,7 @@ dependencies = [
  "hyper 1.7.0",
  "hyper-util",
  "log",
- "rustls 0.23.38",
+ "rustls 0.23.39",
  "rustls-native-certs",
  "rustls-pki-types",
  "tokio",
@@ -2084,7 +2084,7 @@ dependencies = [
  "k8s-openapi 0.27.0",
  "kube-core",
  "pem",
- "rustls 0.23.38",
+ "rustls 0.23.39",
  "secrecy",
  "serde",
  "serde_json",
@@ -2977,9 +2977,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.38"
+version = "0.23.39"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69f9466fb2c14ea04357e91413efb882e2a6d4a406e625449bc0a5d360d53a21"
+checksum = "7c2c118cb077cca2822033836dfb1b975355dfb784b5e8da48f7b6c5db74e60e"
 dependencies = [
  "aws-lc-rs",
  "log",
@@ -3551,7 +3551,7 @@ version = "0.26.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1729aa945f29d91ba541258c8df89027d5792d85a8841fb65e8bf0f4ede4ef61"
 dependencies = [
- "rustls 0.23.38",
+ "rustls 0.23.39",
  "tokio",
 ]
 
