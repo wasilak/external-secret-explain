@@ -78,7 +78,7 @@ jobs:
           strip: true # Reduce binary size
 
       - name: Publish Artifacts and Release
-        uses: houseabsolute/actions-rust-release@v0
+        uses: houseabsolute/actions-rust-release@v1.0.1
         if: startsWith(github.ref, 'refs/tags/')
         with:
           executable-name: external-secret-explain
